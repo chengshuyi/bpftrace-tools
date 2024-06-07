@@ -1,0 +1,36 @@
+#include <linux/virtio_net.h>
+#include <linux/tcp.h>
+#include <linux/ip.h>
+
+kprobe:virtqueue_add_outbuf {
+    $skb = (struct sk_buff *)arg3;
+    $iph = (struct iphdr *)($skb->head + $skb->network_header);
+    $saddr = $iph->saddr;
+    $daddr = $iph->daddr;
+
+    // 6: tcp
+    if ($iph->protocol != 6) {
+        return;
+    }
+
+    $tcph = (struct tcphdr *)($skb->head + $skb->transport_header);
+    $source_port = bswap($tcph->source);
+    $dest_port = bswap($tcph->dest);
+
+    // 12345: 过滤的端口
+    if ($source_port != 12345 && $dest_port != 12345)
+    {
+	    return;
+    }
+
+    printf("IP src %s, dst %s, TCP src port %d, dst port %d ",
+           ntop($saddr), ntop($daddr), $source_port, $dest_port);
+
+    // hdr放在cb里面
+    // $hdr = (struct virtio_net_hdr_mrg_rxbuf *)(arg3 + 0x28);  // 0x28: offsetof(struct sk_buff, cb)
+    
+    // hdr放在headroom里面，一般都是这种情况
+    $hdr = (struct virtio_net_hdr_mrg_rxbuf *)($skb->data - 12); // 12: sizeof(virtio_net_hdr_mrg_rxbuf)
+    printf("flags: %x, gso_type: %d, hdr_len: %u, gso_size: %u\n", $hdr->hdr.flags, $hdr->hdr.gso_type, $hdr->hdr.hdr_len, $hdr->hdr.gso_size);
+}
+
