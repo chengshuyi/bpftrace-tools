@@ -21,6 +21,7 @@ tracepoint:net:netif_receive_skb {
     @skbs[$skb, $source_port, $dest_port, $seq, $ack_seq] = nsecs;
 }
 
+// 不能跟踪tcp_rcv_established，因为这个函数的报文可能不携带数据
 kprobe:tcp_rcv_established {
     $skb = (struct sk_buff *)arg1;
     $iph = (struct iphdr *)($skb->head + $skb->network_header);
