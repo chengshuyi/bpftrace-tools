@@ -1,0 +1,72 @@
+tracepoint:net:netif_receive_skb {
+    $skb = (struct sk_buff *)args->skbaddr;
+    $iph = (struct iphdr *)($skb->head + $skb->network_header);
+    $saddr = $iph->saddr;
+    $daddr = $iph->daddr;
+    if ($iph->protocol != 6) {
+        return;
+    }
+
+    $tcph = (struct tcphdr *)($skb->head + $skb->transport_header);
+    $source_port = bswap($tcph->source);
+    $dest_port = bswap($tcph->dest);
+
+    if ($dest_port != 18769)
+    {
+        return;
+    }
+    $seq = bswap($tcph->seq);
+    $ack_seq = bswap($tcph->ack_seq);
+
+    printf("netif IP src %s, dst %s, TCP src port %d, dst port %d ",
+                ntop($saddr), ntop($daddr), $source_port, $dest_port);
+    printf("seq: %u, ack_seq: %u, nsecs: %lld\n", $seq, $ack_seq, nsecs);
+}
+
+kprobe:tcp_rcv_established {
+    $skb = (struct sk_buff *)arg0;
+    $iph = (struct iphdr *)($skb->head + $skb->network_header);
+    $saddr = $iph->saddr;
+    $daddr = $iph->daddr;
+    if ($iph->protocol != 6) {
+        return;
+    }
+
+    $tcph = (struct tcphdr *)($skb->head + $skb->transport_header);
+    $source_port = bswap($tcph->source);
+    $dest_port = bswap($tcph->dest);
+    if ($dest_port != 18769)
+    {
+        return;
+    }
+    $seq = bswap($tcph->seq);
+    $ack_seq = bswap($tcph->ack_seq);
+
+    printf("tcp_rcv_established IP src %s, dst %s, TCP src port %d, dst port %d ",
+                ntop($saddr), ntop($daddr), $source_port, $dest_port);
+    printf("seq: %u, ack_seq: %u, nsecs: %lld\n", $seq, $ack_seq, nsecs);
+}
+
+kprobe:__kfree_skb {
+    $skb = (struct sk_buff *)arg0;
+    $iph = (struct iphdr *)($skb->head + $skb->network_header);
+    $saddr = $iph->saddr;
+    $daddr = $iph->daddr;
+    if ($iph->protocol != 6) {
+        return;
+    }
+
+    $tcph = (struct tcphdr *)($skb->head + $skb->transport_header);
+    $source_port = bswap($tcph->source);
+    $dest_port = bswap($tcph->dest);
+    if ($dest_port != 18769)
+    {
+        return;
+    }
+    $seq = bswap($tcph->seq);
+    $ack_seq = bswap($tcph->ack_seq);
+
+    printf("kfreeskb IP src %s, dst %s, TCP src port %d, dst port %d ",
+                ntop($saddr), ntop($daddr), $source_port, $dest_port);
+    printf("seq: %u, ack_seq: %u, nsecs: %lld\n", $seq, $ack_seq, nsecs);
+}
