@@ -1,0 +1,24 @@
+
+BEGIN {
+	printf("0:hi, 1:timer, 2:net_tx, 3:net_rx, 4:block, 5:irq_poll, 6:tasklet, 7:sched, 8:hrtimer, 9:rcu\n");
+}
+
+tracepoint:irq:softirq_entry {
+ @start[cpu, args->vec] = nsecs;
+}
+
+tracepoint:irq:softirq_exit {
+ if (@start[cpu, args->vec] > 0)
+ {
+  $lat = nsecs - @start[cpu, args->vec];
+  if ($lat > 10000000)
+  {
+   printf("cpu: %d, softirq: %d, latency: %dns\n", cpu, args->vec, $lat);
+  }
+  delete(@start[cpu, args->vec]);
+ }
+}
+
+END {
+	clear(@start);
+}
