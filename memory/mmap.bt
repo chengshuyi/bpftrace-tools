@@ -1,0 +1,5 @@
+
+tracepoint:syscalls:sys_exit_mmap /comm == "test"/{
+    $addr = args->ret;
+    printf("pid: %d, comm: %s, addr: %p, stack: %s\n", pid, comm, $addr, ustack);
+}

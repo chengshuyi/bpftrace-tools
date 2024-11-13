@@ -1,0 +1,10 @@
+// pid 替换成实际跟踪的进程
+// 0x1和0x3替换成实际的内存区域
+uretprobe:/lib64/libc.so.6:malloc {
+ if (pid == 1) {
+  if (retval > 0x1 && retval < 0x3)
+  {
+   printf("addr: %p, stack: %s\n", retval, ustack);
+  }
+ }
+} 
